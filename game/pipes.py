@@ -123,39 +123,7 @@ class Pipe:
             ctx: HTML Canvas 2D rendering context
             screen_height: Total height of the game screen
         """
-        half_gap = self.gap_size / 2.0
-
-        if self.second_gap_y is not None:
-            # Branching path: two gaps
-            gap1_top = self.gap_y - half_gap
-            gap1_bottom = self.gap_y + half_gap
-            gap2_top = self.second_gap_y - half_gap
-            gap2_bottom = self.second_gap_y + half_gap
-
-            if gap1_top > gap2_top:
-                gap1_top, gap2_top = gap2_top, gap1_top
-                gap1_bottom, gap2_bottom = gap2_bottom, gap1_bottom
-
-            segments = []
-            if gap1_top > 0:
-                segments.append((self.x, 0, self.width, gap1_top))
-            if gap2_bottom > gap1_bottom:
-                segments.append((self.x, gap1_bottom, self.width, gap2_top - gap1_bottom))
-            if gap2_bottom < screen_height:
-                segments.append((self.x, gap2_bottom, self.width, screen_height - gap2_bottom))
-        else:
-            # Normal pipe: one gap
-            top_end = self.gap_y - half_gap
-            bottom_start = self.gap_y + half_gap
-
-            segments = []
-            if top_end > 0:
-                segments.append((self.x, 0, self.width, top_end))
-            if bottom_start < screen_height:
-                segments.append((self.x, bottom_start, self.width, screen_height - bottom_start))
-
-        # Draw each segment
-        for seg_x, seg_y, seg_w, seg_h in segments:
+        for seg_x, seg_y, seg_w, seg_h in self.get_collision_rects(screen_height):
             if seg_h <= 0:
                 continue
 
@@ -171,14 +139,10 @@ class Pipe:
             ctx.fillStyle = "#%02x%02x%02x" % self.PIPE_BORDER
             ctx.fillRect(seg_x, seg_y, 4, seg_h)
 
-            # Draw cap at the edge of the gap
-            cap_height = self.THICKNESS
-            if seg_y + seg_h == top_end or (self.second_gap_y is None and seg_y + seg_h == gap1_top):
-                # Cap on top pipe (bottom edge)
-                ctx.fillStyle = "#%02x%02x%02x" % self.PIPE_COLOR
-                ctx.fillRect(seg_x - 4, seg_y + seg_h - cap_height, seg_w + 8, cap_height)
-                ctx.fillStyle = "#%02x%02x%02x" % self.PIPE_BORDER
-                ctx.fillRect(seg_x - 4, seg_y + seg_h - cap_height, 4, cap_height)
+            # Shade the rim inside the collision rectangle.
+            ctx.fillStyle = "#%02x%02x%02x" % self.PIPE_BORDER
+            rim_y = seg_y + seg_h - self.THICKNESS if seg_y == 0 else seg_y
+            ctx.fillRect(seg_x, rim_y, seg_w, min(self.THICKNESS, seg_h))
 
 
 class PipeManager:
@@ -215,6 +179,10 @@ class PipeManager:
         # Ensure gap is within reasonable bounds
         margin = self.gap_size / 2.0 + 20
         gap_y = random.uniform(margin, self.screen_height - margin)
+
+        if second_gap_y is not None:
+            gap_y = random.uniform(margin, self.screen_height / 2 - self.gap_size / 2 - 6)
+            second_gap_y = self.screen_height - gap_y
 
         pipe = Pipe(x, gap_y, self.gap_size, self.pipe_speed, second_gap_y)
         self.pipes.append(pipe)

@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flappy Rivals — UI Preview</title>
+  <script src="preview.js" defer></script>
+  <!-- Snapshot of ../style.css for direct file:// previews. -->
+  <style>
+/* Flappy Rivals UI and Canvas theme tokens */
+:root {
+  color-scheme: light;
+  --fr-bg: #FFE5A0;
+  --fr-pilot: #356B35;
+  --fr-architect: #356B35;
+  --fr-prediction: #356B35;
+  --fr-bluff: #67452F;
+  --fr-panel: #FFF1C9;
+  --fr-border: #59432F;
+  --fr-text: #59432F;
+  --fr-muted: #356B35;
+  --fr-green: #70B747;
+  --fr-beige: #FFE5A0;
+  --fr-shadow: var(--fr-green);
+  --fr-highlight: #FFF1C9;
+  --fr-sky: #83D4D8;
+  --fr-pipe: #91CF50;
+  --fr-terracotta: #F4A340;
+  --fr-font: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --fr-gap: clamp(0.75rem, 2vw, 1.25rem);
+}
+
+.fr-shell, .fr-shell * { box-sizing: border-box; }
+.fr-shell [hidden] { display: none !important; }
+
+.fr-shell {
+  min-block-size: 100vh;
+  padding: clamp(0.75rem, 4vw, 2.5rem);
+  color: var(--fr-text);
+  background-color: var(--fr-bg);
+  font: 1rem/1.5 var(--fr-font);
+  overflow-wrap: anywhere;
+}
+
+.fr-screen {
+  display: grid;
+  gap: var(--fr-gap);
+  inline-size: min(100%, 72rem);
+  margin-inline: auto;
+}
+
+.fr-menu, .fr-result {
+  inline-size: min(100%, 42rem);
+  text-align: center;
+}
+
+.fr-panel, .fr-level, .fr-stat, .fr-role {
+  padding: var(--fr-gap);
+  border: 3px solid var(--fr-border);
+  background: var(--fr-panel);
+  box-shadow: 3px 3px 0 var(--fr-shadow);
+}
+
+.fr-title {
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.055em;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 #FFF1C9, 4px 4px 0 var(--fr-shadow);
+}
+
+.fr-kicker, .fr-label {
+  color: var(--fr-muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.fr-button {
+  min-block-size: 44px;
+  max-inline-size: 100%;
+  padding: 0.625rem 1rem;
+  border: 3px solid var(--fr-border);
+  box-shadow: inset 0 3px 0 var(--fr-highlight), 3px 3px 0 var(--fr-shadow);
+  border-radius: 0;
+  background: var(--fr-panel);
+  color: var(--fr-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fr-button--primary {
+  background: var(--fr-pipe);
+  box-shadow: inset 0 3px 0 var(--fr-pipe), 3px 3px 0 var(--fr-shadow);
+}
+
+.fr-button:hover:not(:disabled) { background: var(--fr-highlight); text-decoration: underline; }
+.fr-button:active:not(:disabled) { box-shadow: inset 0 -3px 0 var(--fr-shadow); }
+.fr-button:disabled { opacity: 0.6; cursor: default; }
+.fr-shell :focus-visible { outline: 3px solid var(--fr-text); outline-offset: 4px; }
+
+.fr-progression {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fr-level { padding: 0.5rem; text-align: center; }
+.fr-level--complete { background: var(--fr-highlight); }
+.fr-level[aria-current="step"] { background: var(--fr-beige); box-shadow: inset 0 -4px 0 var(--fr-pipe); }
+.fr-level--locked { background: #FFE5A0; color: var(--fr-muted); }
+
+.fr-play-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem);
+  gap: var(--fr-gap);
+  align-items: start;
+}
+
+.fr-hud, .fr-roles, .fr-sidebar { display: grid; gap: 0.75rem; min-inline-size: 0; }
+.fr-hud, .fr-roles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fr-stat { margin: 0; }
+
+.fr-value {
+  margin: 0;
+  font-size: clamp(1.125rem, 3vw, 1.75rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.fr-stage {
+  min-inline-size: 0;
+  border: 4px solid var(--fr-border);
+  background: var(--fr-panel);
+  box-shadow: 4px 4px 0 var(--fr-shadow);
+}
+
+.fr-canvas { display: block; inline-size: 100%; block-size: auto; image-rendering: pixelated; }
+
+.fr-pilot { --fr-accent: var(--fr-pilot); }
+.fr-architect { --fr-accent: var(--fr-architect); }
+.fr-prediction { --fr-accent: var(--fr-prediction); }
+.fr-bluff { --fr-accent: var(--fr-bluff); }
+
+.fr-accent { color: var(--fr-accent, var(--fr-text)); }
+.fr-role, .fr-feedback { border-inline-start: 6px solid var(--fr-accent, var(--fr-border)); }
+.fr-feedback.fr-bluff { border-inline-start-color: var(--fr-terracotta); }
+.fr-feedback p { margin-block: 0.375rem 0; }
+
+.fr-meter {
+  display: block;
+  inline-size: 100%;
+  block-size: 1rem;
+  overflow: hidden;
+  appearance: none;
+  border: 2px solid var(--fr-border);
+  border-radius: 0;
+  background: var(--fr-bg);
+  color: var(--fr-accent, var(--fr-pilot));
+  accent-color: var(--fr-accent, var(--fr-pilot));
+}
+
+.fr-meter::-webkit-progress-bar { background: var(--fr-bg); }
+.fr-meter::-webkit-progress-value { background: var(--fr-accent, var(--fr-pilot)); }
+.fr-meter::-moz-progress-bar { background: var(--fr-accent, var(--fr-pilot)); }
+
+.fr-result--game-over { --fr-accent: var(--fr-bluff); }
+.fr-result--winner { --fr-accent: var(--fr-architect); }
+.fr-result .fr-panel { border-color: var(--fr-accent, var(--fr-border)); }
+
+@media (max-width: 48rem) {
+  .fr-play-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 28rem) {
+  .fr-progression { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+    body { margin: 0; }
+    .preview-header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline;
+      gap: .5rem 1rem; max-inline-size: 72rem; margin: 0 auto var(--fr-gap);
+      padding-block-end: .75rem; border-block-end: 1px solid var(--fr-border);
+    }
+    .preview-brand { color: var(--fr-pilot); font-weight: 900; letter-spacing: .08em; }
+    .preview-header p, .preview-intro p, .preview-role p, .preview-note { margin: 0; }
+    .preview-intro { padding-block: clamp(1.25rem, 7vw, 4rem) 1rem; }
+    .preview-intro .fr-title { margin-block-end: .75rem; }
+    .preview-role { text-align: start; }
+    .preview-control-options {
+      display: flex; flex-wrap: wrap; gap: .5rem; margin-block-start: .75rem;
+    }
+    .preview-control-options .fr-button { padding-inline: .5rem; }
+    .preview-control-options .fr-button[aria-pressed="true"] {
+      background: var(--fr-pipe);
+      box-shadow: inset 0 -4px 0 var(--fr-green), 3px 3px 0 var(--fr-shadow);
+      text-decoration: underline;
+    }
+    .preview-control-method {
+      display: inline-block; padding: 0 .35rem;
+      border: 2px solid var(--fr-architect); background: var(--fr-beige);
+      color: var(--fr-text);
+    }
+    .preview-role h2, .fr-feedback h3 { margin: 0 0 .35rem; font-size: 1rem; }
+    .preview-sidebar .fr-roles { grid-template-columns: 1fr; }
+    .preview-arena { display: grid; gap: var(--fr-gap); min-inline-size: 0; }
+    .preview-note { color: var(--fr-muted); font-size: .875rem; }
+    .preview-level-name { display: block; }
+    .preview-controls { justify-content: start; }
+    .preview-controls .fr-button { flex: 0 1 auto; }
+    .preview-meter { margin-block: .4rem; }
+    .preview-result-score { font-size: clamp(2.5rem, 7vw, 4rem); }
+    .preview-legend { padding: .6rem .8rem; border-block-start: 1px solid var(--fr-border); }
+    .preview-legend span { color: var(--fr-prediction); }
+    @media (max-width: 28rem) {
+      .preview-intro + .fr-roles { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<main class="fr-shell">
+  <header class="preview-header">
+    <span class="preview-brand">FLAPPY RIVALS</span>
+    <p class="fr-label">UI prototype · Simulated data</p>
+  </header>
+
+  <section id="menu" class="fr-screen fr-menu" aria-labelledby="menu-title">
+    <div class="preview-intro">
+      <h1 id="menu-title" class="fr-title" tabindex="-1">Flappy Rivals</h1>
+      <p>Two rivals. One flight path.</p>
+    </div>
+    <div class="fr-roles">
+      <article class="fr-role fr-pilot preview-role">
+        <h2 class="fr-accent">Bird (Pilot)</h2>
+        <p>Lift the bird and clear the gates.</p>
+        <div class="preview-control-options" role="group" aria-label="Bird control method">
+          <button id="bird-voice" class="fr-button" type="button" aria-pressed="false">Voice</button>
+          <button id="bird-keyboard" class="fr-button" type="button" aria-pressed="true">Keyboard</button>
+        </div>
+      </article>
+      <article class="fr-role fr-architect preview-role">
+        <h2 class="fr-accent">Saboteur (Architect)</h2>
+        <p>Place obstacles in the Bird’s path.</p>
+        <div class="preview-control-options" role="group" aria-label="Saboteur control method">
+          <button id="saboteur-voice" class="fr-button" type="button" aria-pressed="true">Voice</button>
+          <button id="saboteur-keyboard" class="fr-button" type="button" aria-pressed="false">Keyboard</button>
+        </div>
+      </article>
+    </div>
+    <p id="control-status" class="preview-note" role="status">Bird uses Keyboard. Saboteur uses Voice.</p>
+    <p class="preview-note">One player uses Voice and the other uses Keyboard. Changing one switches the other automatically. No microphone is used in this preview.</p>
+    <div class="fr-actions">
+      <button id="start" class="fr-button fr-button--primary" type="button">Start Game</button>
+    </div>
+    <noscript>Enable JavaScript to switch screens and view the simulated round.</noscript>
+  </section>
+
+  <section id="game" class="fr-screen" aria-labelledby="game-title" hidden>
+    <h1 id="game-title" class="fr-title" tabindex="-1">Flight Arena</h1>
+    <div class="fr-hud">
+      <div class="fr-stat"><div class="fr-label">Score</div><p id="score" class="fr-value">0</p></div>
+      <div class="fr-stat fr-architect"><div class="fr-label">Current level</div><p id="level" class="fr-value fr-accent">Level 1 of 5</p></div>
+    </div>
+    <ol id="progression" class="fr-progression" aria-label="Level progression"></ol>
+    <div class="fr-play-layout">
+      <div class="preview-arena">
+        <div class="fr-stage">
+          <canvas id="arena" class="fr-canvas" width="720" height="420" role="img" aria-label="Simulated pixel-art arena with a Pilot, green pipes, and a dashed forest-green forecast.">
+            Simulated arena with the Pilot, green pipes, and a forecast marker.
+          </canvas>
+          <p class="preview-note preview-legend"><span>Dashed forest green</span> marks the AI forecast.</p>
+        </div>
+        <div class="fr-actions preview-controls" role="group" aria-label="Demo controls">
+          <button id="previous" class="fr-button" type="button" disabled>Previous Level</button>
+          <button id="advance" class="fr-button fr-button--primary" type="button">Next Level</button>
+          <button id="end" class="fr-button" type="button">End Run</button>
+        </div>
+        <p id="round-status" class="preview-note" role="status"></p>
+      </div>
+      <aside class="fr-sidebar preview-sidebar" aria-label="Roles and AI telemetry">
+        <div class="fr-roles">
+          <article id="hud-pilot" class="fr-role fr-pilot preview-role">
+            <h2 class="fr-accent">Bird (Pilot)</h2>
+            <span id="bird-control" class="fr-label preview-control-method">Control · Keyboard</span>
+            <p id="pilot-status"></p>
+            <label class="fr-label" for="energy">Mock microphone energy</label>
+            <progress id="energy" class="fr-meter fr-pilot preview-meter" max="1" value="0"></progress>
+            <p id="energy-value" class="preview-note"></p>
+          </article>
+          <article id="hud-architect" class="fr-role fr-architect preview-role">
+            <h2 class="fr-accent">Saboteur (Architect)</h2>
+            <span id="saboteur-control" class="fr-label preview-control-method">Control · Voice</span>
+            <p id="architect-status"></p>
+          </article>
+        </div>
+        <section class="fr-panel fr-feedback fr-prediction" aria-labelledby="prediction-title">
+          <h3 id="prediction-title" class="fr-accent">AI Prediction</h3>
+          <p id="prediction"></p>
+        </section>
+        <section class="fr-panel fr-feedback fr-bluff" aria-labelledby="bluff-title">
+          <h3 id="bluff-title" class="fr-accent">Bluff Detector</h3>
+          <p id="bluff"></p>
+          <p id="bluff-status" class="preview-note" role="status"></p>
+        </section>
+      </aside>
+    </div>
+  </section>
+
+  <section id="result" class="fr-screen fr-result" aria-labelledby="result-title" hidden>
+    <div class="preview-intro">
+      <h1 id="result-title" class="fr-title fr-accent" tabindex="-1">Game Over</h1>
+      <p id="winner"></p>
+    </div>
+    <div class="fr-panel">
+      <div class="fr-label">Final score</div>
+      <p id="final-score" class="fr-value preview-result-score">0</p>
+      <p id="final-level" class="preview-note"></p>
+    </div>
+    <div class="fr-actions">
+      <button id="replay" class="fr-button fr-button--primary" type="button">Replay</button>
+      <button id="back" class="fr-button" type="button">Back to Menu</button>
+    </div>
+  </section>
+</main>
+</body>
+</html>
