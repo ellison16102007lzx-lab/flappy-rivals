@@ -40,7 +40,7 @@ class VoiceRules(unittest.TestCase):
     def test_voice_changes_size_and_preserves_center(self):
         player = Architect()
         for volume, expected in [(0, 100), (0.5, 50), (1, 0), (0, 100)]:
-            for _ in range(51):
+            for _ in range(26):
                 scale = player.update(0.05, volume)
             top, bottom = gap_bounds(150, 100, scale)
             self.assertAlmostEqual(bottom - top, expected)
@@ -64,6 +64,13 @@ class VoiceRules(unittest.TestCase):
             player.update(0.05, 0, axis=-1, powers_enabled=True)
         self.assertEqual(player.scale, 0)
         self.assertAlmostEqual(player.update(0.05, 0, powers_enabled=True), 0.04)
+
+    def test_holding_drains_sixty_energy_per_second(self):
+        player = Architect()
+        player.scale = 0
+        for _ in range(20):
+            player.update(0.05, 1)
+        self.assertAlmostEqual(player.pulse.energy, 40)
 
     def test_sustained_voice_and_keyboard_force_reopening(self):
         for volume, axis, powers in [(1, 0, True), (0, -1, False), (0.9, 0, False)]:

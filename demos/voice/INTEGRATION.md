@@ -31,6 +31,6 @@ result = winner(collided, passed_this_level, target_for_this_level)
 
 从同一个 Architect 对象读取 pulse.energy（0–100）和 pulse.remaining（秒）。使用 A 已读出的 volume（0–1）和 result。技能消耗 40 点，持续 0.8 秒，每秒恢复 8 点。声音大于等于 0.78 时触发，回落到 0.45 以下或等于该值后可再次触发。初始阈值可在现场测试后调整。
 
-在生成管道时保存 original_gap_size（关卡配置的 gap_size）。持续压到原始缺口的 25% 以下（含边界）时每秒消耗 40 点，耗尽后自动张开。退出恢复状态需要缺口已经全开、能量至少为 20、收窄输入已降至 0.45 以下或等于该值。键盘收窄与声音遵守相同规则。
+在生成管道时保存 original_gap_size（关卡配置的 gap_size）。持续压到原始缺口的 25% 以下（含边界）时每秒消耗 60 点，耗尽后自动张开。退出恢复状态需要缺口已经全开、能量至少为 20、收窄输入已降至 0.45 以下或等于该值。键盘收窄与声音遵守相同规则。
 
 HUD 优先显示 architect.recovering 的恢复提示；否则若 pulse.remaining > 0，显示「脉冲 ×2」和剩余秒数。音量条使用 mic.read(sensitivity) 的同一份返回值。

@@ -15,7 +15,7 @@ class Pulse:
         elif volume <= 0.45:
             self.armed = True
         self.remaining = max(0.0, self.remaining - dt) if enabled else 0.0
-        rate = -40.0 if holding else 8.0
+        rate = -60.0 if holding else 8.0
         self.energy = max(0.0, min(100.0, self.energy + rate * dt))
         if enabled and not self.remaining and self.energy >= 40 and (loud_onset or key_pressed):
             self.energy -= 40
