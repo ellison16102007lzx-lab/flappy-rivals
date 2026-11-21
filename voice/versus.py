@@ -30,6 +30,17 @@ class Architect:
         return self.scale
 
 
+def guarded_gap(base_gap, scale, previous_gap, distance_to_entry, distance_to_exit,
+                speed_px_per_second, bird_height):
+    """Distances are pipe left minus bird right, and pipe right minus bird left."""
+    requested = base_gap * scale
+    protected = distance_to_exit >= 0 and distance_to_entry <= max(0, speed_px_per_second)
+    if protected:
+        clearance = min(base_gap, bird_height + 12)
+        return max(requested, previous_gap, clearance), True
+    return requested, False
+
+
 def gap_bounds(center_y, base_gap, scale, min_gap=0):
     """按固定中心缩放。关卡应保证 base_gap >= min_gap。"""
     if scale <= 0:

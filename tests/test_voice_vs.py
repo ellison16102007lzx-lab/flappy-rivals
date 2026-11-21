@@ -1,7 +1,7 @@
 import unittest
 
 from voice.controller import volume_from_samples
-from voice.versus import Architect, gap_bounds, winner
+from voice.versus import Architect, gap_bounds, guarded_gap, winner
 
 
 class VoiceRules(unittest.TestCase):
@@ -99,3 +99,19 @@ class VoiceRules(unittest.TestCase):
         self.assertAlmostEqual(volume_from_samples(samples, 0.5), normal / 2)
         self.assertEqual(volume_from_samples(samples, 3), 1)
         self.assertEqual(volume_from_samples([0], 3), 0)
+
+    def test_late_full_energy_pulse_cannot_shrink_current_pipe(self):
+        player = Architect()
+        scale = player.update(0.1, 1, power_pressed=True, powers_enabled=True)
+        self.assertLess(scale, 1)
+        for entry, exit_distance in [(100, 190), (0, 90), (-90, 0)]:
+            self.assertEqual(guarded_gap(100, scale, 100, entry, exit_distance, 100, 24), (100, True))
+        for entry, exit_distance in [(101, 191), (-91, -1)]:
+            self.assertEqual(guarded_gap(100, scale, 100, entry, exit_distance, 100, 24), (100 * scale, False))
+
+    def test_protected_gap_allows_passage_and_can_widen(self):
+        gap = 0
+        for scale, expected in [(0, 36), (0.7, 70), (0, 70)]:
+            gap, protected = guarded_gap(100, scale, gap, 0, 40, 120, 24)
+            self.assertTrue(protected)
+            self.assertEqual(gap, expected)

@@ -8,7 +8,7 @@
 
 ```python
 from voice.controller import Microphone
-from voice.versus import Architect, gap_bounds, winner
+from voice.versus import Architect, guarded_gap, winner
 
 mic = Microphone()
 architect = Architect()
@@ -19,8 +19,13 @@ volume = mic.read(sensitivity)  # 麦克风滑块 0.25–3.0，默认 1.0
 scale = architect.update(dt, volume, axis, x_pressed, powers_enabled)
 # base_gap 为生成时的原始缺口高度。以普通速度持续收窄约 1.25 秒可从全开变为闭合。
 # 绘制与碰撞共用上下边缘，每帧以原始高度计算。
-top, bottom = gap_bounds(pipe.gap_y, original_gap_size, scale)
-pipe.gap_size = bottom - top  # 团队 Pipe 的绘制与碰撞都读取 gap_size
+# 每根管道移动后、碰撞检测前执行。原版 speed 是像素/帧，按 60 帧/秒换算。
+pipe.gap_size, protected = guarded_gap(
+    original_gap_size, scale, pipe.gap_size,
+    pipe.x - (bird.x + bird.width), pipe.x + pipe.width - bird.x,
+    pipe.speed * 60, bird.height,
+)
+# 绘制和碰撞直接读取 pipe.gap_size。初始化为 original_gap_size。
 # A 完成本帧碰撞与计分后调用。None 表示继续，Pilot Win 表示本关通关。
 result = winner(collided, passed_this_level, target_for_this_level)
 ```
@@ -34,3 +39,7 @@ result = winner(collided, passed_this_level, target_for_this_level)
 在生成管道时保存 original_gap_size（关卡配置的 gap_size）。缺口宽度为原宽的 50% 或以下时每秒消耗 60 点，耗尽后自动张开。退出恢复状态需要缺口已经全开、能量至少为 20、收窄输入已降至 0.45 以下或等于该值。键盘收窄与声音遵守相同规则。
 
 HUD 优先显示 architect.recovering 的恢复提示；否则若 pulse.remaining > 0，显示「脉冲 ×2」和剩余秒数。音量条使用 mic.read(sensitivity) 的同一份返回值。
+
+## 临近管道保护
+
+每根管道独立判断。距进入管道约 1 秒起，到鸟尾离开管道为止，实际缺口只能增大。若进保护区前管道已闭合，立即留出鸟身高度加 12 像素的通道（上限为原始开口）。声音、方向键和脉冲均经过同一个保护函数。保护期间仍需对准缺口。HUD 可用返回的 protected 显示「穿越保护」。
