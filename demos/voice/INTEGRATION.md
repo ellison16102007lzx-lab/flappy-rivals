@@ -40,6 +40,6 @@ result = winner(collided, passed_this_level, target_for_this_level)
 
 HUD 优先显示 architect.recovering 的恢复提示；否则若 pulse.remaining > 0，显示「脉冲 ×2」和剩余秒数。音量条使用 mic.read(sensitivity) 的同一份返回值。
 
-## 临近管道保护
+## 穿越管道保护
 
-每根管道独立判断。距进入管道约 1 秒起，到鸟尾离开管道为止，实际缺口只能增大。若进保护区前管道已闭合，立即留出鸟身高度加 12 像素的通道（上限为原始开口）。声音、方向键和脉冲均经过同一个保护函数。保护期间仍需对准缺口。HUD 可用返回的 protected 显示「穿越保护」。
+每根管道独立判断。鸟头碰到入口（distance_to_entry <= 0）时开始保护，鸟尾越过出口（distance_to_exit < 0）后恢复收窄。两者之间实际缺口只能增大。若进保护区前管道已闭合，立即留出鸟身高度加 12 像素的通道（上限为原始开口）。声音、方向键和脉冲均经过同一个保护函数。保护期间仍需对准缺口。HUD 可用返回的 protected 显示「穿越保护」。
