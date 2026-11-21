@@ -1,18 +1,22 @@
 # Flappy Rivals — Team Demo
 
-在 JetBrains Air 打开本目录，使用本机 Python 3.10+ 运行 `run_demo.py`。也可在项目终端运行 `python run_demo.py`。启动器打开一个本机浏览器页面，退出启动器即可停止服务。无需 pip 安装。浏览器需要联网从 jsDelivr 加载 Pyodide 0.27.7，项目的 Python 源码由本地服务提供。
+Open this folder in JetBrains Air and run `run_demo.py` with Python 3.10 or later. From the project terminal, run `python run_demo.py`. The launcher opens the game in your browser. Stop the launcher to shut down the local server. The browser downloads Pyodide 0.27.7 from jsDelivr and loads the team's Python code from the local server. No pip packages are required.
 
-## 双人操作
+## Controls
 
-- Pilot 用 Space 或点击画面拍翅。Architect 用 ↑ 收窄、↓ 张开，X 发动脉冲。点击开启麦克风，可用声音控制缺口；滑块调节灵敏度。声音控制切换为 Pilot 后，短促发声控制拍翅，Architect 使用键盘。
-- 缺口在半宽或以下每秒耗能 60 点。脉冲消耗 40 点，双速持续 0.8 秒。能量耗尽后缺口自动张开。鸟头碰到实体当帧判 Architect Win；从空隙进入后缺口只能张开，鸟尾越过出口后可恢复收窄。
-- 按 Space 开始、重试或进入下一关。通关第五关后 Space 开始新一轮。现场展示可用下拉框或数字 1–5 直接开始指定关卡。
-- 第一关展示基础对抗；第二关打开声音技能；第三关有两条路线；第四关预测到达管道入口时的高度；第五关评估实际高度与先前预测的误差。误差至少 40 像素时显示 Bluff。成功观测后才训练模型。模型在当前页面会话中积累样本。
+- Pilot: press Space or click the arena to flap. Architect: hold ↑ to narrow the gap, hold ↓ to open it, and press X for a pulse.
+- Select **Enable microphone** to control the gap with your voice. Adjust the sensitivity slider to suit the room. Switch voice control to Pilot to flap with short sounds while the Architect uses the keyboard.
+- At half width or less, the gap drains 60 energy per second. A pulse costs 40 energy and doubles the movement speed for 0.8 seconds. The gap reopens when energy runs out. Hitting a pipe ends the round immediately. During a clean crossing, the gap can only widen until the bird's tail clears the exit.
+- Press Space to start, retry, or advance. After Level 5, press Space to start a new run. For a live demo, select a level from the menu or press 1–5.
 
-## 团队模块
+## Levels
 
-A 的 `game/` 控制物理、碰撞、计分和五关。B 的 `voice/` 控制麦克风、能量、技能和穿越保护。C 的 `ml/` 和 `style.css` 提供在线学习、Bluff 判定和界面主题。正式入口为根目录 `index.html`，`boot.js` 加载浏览器 Python 并以固定 60 Hz 更新，`main.py` 连接输入、游戏和 HUD。原型位于 `ui-preview/`，独立声音测试位于 `demos/voice/`。
+Level 1 introduces the duel. Level 2 unlocks voice powers. Level 3 offers two routes. In Level 4 the model predicts the bird's height at the pipe entrance. In Level 5 an error of at least 40 pixels triggers a Bluff. The model learns from observed crossings and retains its samples for the browser session.
 
-## 验证
+## Team modules
 
-从项目根目录运行 `python -B -m unittest discover -s tests -v`。集成测试覆盖撞柱、入口保护、五关切换和预测在真实过管时刻的评分。
+Member A's `game/` handles physics, collisions, scoring, and levels. Member B's `voice/` handles the microphone, energy, powers, and crossing protection. Member C's `ml/` and `style.css` provide online learning, bluff detection, and the UI theme. The game starts at `index.html`. The browser adapter in `boot.js` loads Python and advances the simulation at 60 Hz. The `main.py` module connects controls, the game engine, and the HUD. The visual prototype is in `ui-preview/`, and the standalone voice demo is in `demos/voice/`.
+
+## Tests
+
+Run `python -B -m unittest discover -s tests -v` from the project root. Integration tests cover pipe contact, crossing protection, level progression, and forecast scoring at the crossing.

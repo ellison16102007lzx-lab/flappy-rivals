@@ -18,7 +18,7 @@ async function boot() {
   }));
   py.runPython("from main import engine, mic, tick, show");
   const engine = py.globals.get("engine"), tick = py.globals.get("tick"), show = py.globals.get("show");
-  byId("state").textContent = "Ready · 按 Space 开始";
+  byId("state").textContent = "Ready · Press Space to start";
   byId("mic").disabled = false;
   let listening = false;
   byId("mic").onclick = async () => {
@@ -26,9 +26,9 @@ async function boot() {
     try {
       await py.runPythonAsync(listening ? "await mic.stop()" : "await mic.start()");
       listening = !listening;
-      byId("mic").textContent = listening ? "关闭麦克风" : "开启麦克风";
-      byId("inputStatus").textContent = listening ? "声音已接入" : "键盘模式";
-    } catch(e) { byId("inputStatus").textContent = "请检查麦克风权限，方向键仍可用"; }
+      byId("mic").textContent = listening ? "Disable microphone" : "Enable microphone";
+      byId("inputStatus").textContent = listening ? "Microphone active" : "Keyboard mode";
+    } catch(e) { byId("inputStatus").textContent = "Check microphone permissions. Arrow keys are available."; }
     finally { byId("mic").disabled = false; }
   };
   function chooseLevel(value) {
@@ -61,4 +61,4 @@ async function boot() {
   }
   requestAnimationFrame(frame);
 }
-boot().catch(e=>{ byId("state").textContent="加载失败 · "+e.message; console.error(e); });
+boot().catch(e=>{ byId("state").textContent="Loading failed · "+e.message; console.error(e); });

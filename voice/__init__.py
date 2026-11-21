@@ -1,1 +1,1 @@
-"""Flappy Rivals 的 Architect 控制模块。"""
+"""Architect controls for Flappy Rivals."""

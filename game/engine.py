@@ -235,7 +235,7 @@ class GameEngine:
             _, y, velocity, predicted = self.pending
             actual = self.bird.y
             result = self.detector.evaluate(predicted, actual)
-            self.bluff_feedback = f"误差 {result.absolute_error_px:.0f} px"
+            self.bluff_feedback = f"Prediction error {result.absolute_error_px:.0f} px"
             if config["ai_bluff"] and result.is_bluff:
                 self.bluff_feedback += " · Bluff!"
             self.model.update(y, velocity, actual)

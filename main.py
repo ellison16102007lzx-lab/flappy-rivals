@@ -9,9 +9,9 @@ mic = Microphone()
 armed = True
 elements = {key: document.getElementById(key) for key in
             ("state", "levelSelect", "ability", "energy", "volume", "forecast")}
-level_state = {"start": "按 Space 开始", "playing": "飞行中",
-               "gameover": "Architect Win · 按 Space 重试",
-               "levelcomplete": "Pilot Win · 按 Space 继续"}
+level_state = {"start": "Press Space to start", "playing": "In flight",
+               "gameover": "Architect Win · Press Space to retry",
+               "levelcomplete": "Pilot Win · Press Space to continue"}
 
 
 def tick(axis, pressed, sensitivity, role):
@@ -35,20 +35,20 @@ def show():
     elements["energy"].value = engine.energy
     pulse = engine.architect.pulse
     if engine.protected:
-        ability = "穿越保护"
+        ability = "Crossing guard"
     elif engine.architect.recovering:
-        ability = "强制张开 · 松开收窄键并降低音量"
+        ability = "Reopening · Release ↑ and lower your voice"
     elif pulse.remaining:
-        ability = f"脉冲 ×2 · {pulse.remaining:.1f}s"
+        ability = f"Pulse ×2 · {pulse.remaining:.1f}s"
     else:
-        ability = "基础控制" if level == 1 else "脉冲就绪" if pulse.energy >= 40 else "能量恢复中"
+        ability = "Basic controls" if level == 1 else "Pulse ready" if pulse.energy >= 40 else "Recharging"
     elements["ability"].textContent = f"{ability} · {engine.energy:.0f}/100"
     if level < 4:
-        message = "第 4 关开启预测，第 5 关开启 Bluff。"
+        message = "Forecasts start in Level 4. Bluff detection starts in Level 5."
     elif engine.prediction is None:
-        message = "等待下一根管道进入预测范围…"
+        message = "Waiting for the next pipe to enter forecast range…"
     else:
-        message = f"预计过管 Y = {engine.prediction:.0f} px · 已学习 {engine.model.samples_seen} 次"
+        message = f"Predicted crossing height: {engine.prediction:.0f} px · Training samples: {engine.model.samples_seen}"
         if engine.bluff_feedback:
             message += " · " + engine.bluff_feedback
     elements["forecast"].textContent = message

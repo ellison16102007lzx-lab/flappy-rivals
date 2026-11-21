@@ -8,7 +8,7 @@ class Pulse:
     armed: bool = True
 
     def update(self, dt, volume, key_pressed, enabled, holding=False):
-        """一次响声或一次按键消耗 40 点；持续发声只触发一次。"""
+        """A sound or key press costs 40 energy. A sustained sound triggers only once."""
         loud_onset = self.armed and volume >= 0.78
         if loud_onset:
             self.armed = False

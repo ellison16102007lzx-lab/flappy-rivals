@@ -36,7 +36,7 @@ class DemoIntegration(unittest.TestCase):
             g.update()
         self.assertEqual(g.model.samples_seen, 1)
         self.assertIsNotNone(g.prediction)
-        self.assertIn("误差", g.bluff_feedback)
+        self.assertIn("Prediction error", g.bluff_feedback)
         g.restart()
         self.assertIsNone(g.pending)
 

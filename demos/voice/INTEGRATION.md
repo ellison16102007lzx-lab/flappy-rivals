@@ -1,10 +1,10 @@
-# 成员 B 接口交接
+# Architect integration guide
 
-从项目根目录启动 `python -m http.server 8000 --bind 127.0.0.1`，访问 http://localhost:8000/demos/voice/ 。页面会联网加载 Pyodide 0.27.7。核心模块使用 Python 标准库。四个 voice 文件需要映射到正式页面的 Pyodide 虚拟文件系统，参考同目录 index.html 的加载代码。PyScript 项目可以通过其 files 配置映射相同目录结构。
+From the project root, start `python -m http.server 8000 --bind 127.0.0.1` and visit http://localhost:8000/demos/voice/. The demo loads Pyodide 0.27.7 online. Its four Python voice files must be available in the browser runtime under the same package paths as on disk. See the loader in this folder's index.html. PyScript projects can also map these paths through their files configuration.
 
-## A 在游戏循环中的调用
+## Game loop
 
-下面的变量由引擎提供。每局创建一个 Architect。麦克风对象跨关复用，用户点击开启时 await mic.start()，失败时保留键盘操作，离开游戏时 await mic.stop()。方向键应阻止页面滚动，X 只在首次 keydown 时记一次，在下一帧消费。
+Create one Architect per round. Keep one Microphone across levels. On a user click, await mic.start() and allow keyboard play if access fails. Call await mic.stop() when leaving the game. Prevent arrow keys from scrolling the page. Queue X on the initial key press and consume it on the next simulation tick.
 
 ```python
 from voice.controller import Microphone
@@ -13,33 +13,30 @@ from voice.versus import Architect, guarded_gap, winner
 mic = Microphone()
 architect = Architect()
 
-# 每个运行中的游戏帧调用一次；dt 单位为秒，画布 Y 向下。
+# Once per active tick. Time is in seconds, and Y increases downward.
 axis = int(down_held) - int(up_held)
-volume = mic.read(sensitivity)  # 麦克风滑块 0.25–3.0，默认 1.0
+volume = mic.read(sensitivity)  # Range 0.25–3.0, default 1.0.
 scale = architect.update(dt, volume, axis, x_pressed, powers_enabled)
-# base_gap 为生成时的原始缺口高度。以普通速度持续收窄约 1.25 秒可从全开变为闭合。
-# 绘制与碰撞共用上下边缘，每帧以原始高度计算。
-# 每根管道移动后、碰撞检测前执行。原版 speed 是像素/帧，按 60 帧/秒换算。
+
+# For each pipe, use the original gap height saved at spawn.
+# Test contact with the existing wall before the guard can widen the gap.
 pipe.gap_size, protected = guarded_gap(
     original_gap_size, scale, pipe.gap_size,
     pipe.x - (bird.x + bird.width), pipe.x + pipe.width - bird.x,
     pipe.speed * 60, bird.height,
 )
-# 绘制和碰撞直接读取 pipe.gap_size。初始化为 original_gap_size。
-# A 完成本帧碰撞与计分后调用。None 表示继续，Pilot Win 表示本关通关。
+# Use the resulting gap for drawing and collision detection.
 result = winner(collided, passed_this_level, target_for_this_level)
 ```
 
-第 1 关关闭技能，第 2、5 关开启，第 3、4 关由关卡配置控制。双路线关对每个缺口分别使用自己的固定中心和原始高度。声音越响缺口越窄，持续满格可完全闭合。↑ 收窄，↓ 恢复，脉冲额外收窄并使开合速度翻倍。Space 归 Pilot。重试和下一关各创建新的 Architect，暂停期间不调用 update。
+A fully open gap takes about 1.25 seconds to close at normal speed. Loud sounds narrow the gap. Arrow keys apply the same rules as voice. A pulse narrows the target further and doubles the movement speed. Level 1 uses basic controls. Each later level enables powers through its configuration. Each route in a split pipe retains its own center. Skip updates while paused and reset the Architect on a retry or level change.
 
-## C 的 HUD
+## HUD and energy
 
-从同一个 Architect 对象读取 pulse.energy（0–100）和 pulse.remaining（秒）。使用 A 已读出的 volume（0–1）和 result。技能消耗 40 点，持续 0.8 秒，每秒恢复 8 点。声音大于等于 0.78 时触发，回落到 0.45 以下或等于该值后可再次触发。初始阈值可在现场测试后调整。
+Read pulse.energy (0–100), pulse.remaining (seconds), the current tick's volume (0–1), and the round result. A pulse costs 40 energy, lasts 0.8 seconds, and triggers at a volume of 0.78 or above. The sound trigger rearms at 0.45 or below. Energy normally regenerates at 8 points per second.
 
-在生成管道时保存 original_gap_size（关卡配置的 gap_size）。缺口宽度为原宽的 50% 或以下时每秒消耗 60 点，耗尽后自动张开。退出恢复状态需要缺口已经全开、能量至少为 20、收窄输入已降至 0.45 以下或等于该值。键盘收窄与声音遵守相同规则。
+At half width or less, the gap drains 60 energy per second. An empty bar forces the gap open. Recovery ends when the gap is fully open, energy is at least 20, and the narrowing input is at most 0.45. Show a reopening message during recovery. During a pulse, show “Pulse ×2” and the remaining time. Use the same adjusted volume for the meter and the game logic.
 
-HUD 优先显示 architect.recovering 的恢复提示；否则若 pulse.remaining > 0，显示「脉冲 ×2」和剩余秒数。音量条使用 mic.read(sensitivity) 的同一份返回值。
+## Crossing guard
 
-## 穿越管道保护
-
-每根管道独立判断。鸟头碰到入口（distance_to_entry <= 0）时开始保护，鸟尾越过出口（distance_to_exit < 0）后恢复收窄。两者之间实际缺口只能增大。若进保护区前管道已闭合，立即留出鸟身高度加 12 像素的通道（上限为原始开口）。声音、方向键和脉冲均经过同一个保护函数。保护期间仍需对准缺口。HUD 可用返回的 protected 显示「穿越保护」。
+Check each pipe separately. Protection starts when the bird reaches the entrance (distance_to_entry <= 0) and ends when its tail clears the exit (distance_to_exit < 0). During that interval the gap can only widen. The guard allows clearance equal to the bird's height plus 12 pixels, capped at the original gap height. The bird must still enter through the opening. Use the returned protected flag to display “Crossing guard.”
