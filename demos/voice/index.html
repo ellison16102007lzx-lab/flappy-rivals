@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architect · 声音控制台</title>
+<style>
+*{box-sizing:border-box}body{background:#10212c;color:#f0f5ed;font:16px/1.6 "DM Sans",system-ui,sans-serif;margin:5vh auto;padding:0 20px;max-width:730px}h1{font-size:clamp(28px,6vw,48px);margin:0}small{color:#9fe1b6}button{background:#b5ed9d;border:0;border-radius:6px;padding:10px 16px;font:inherit;cursor:pointer}button:disabled{opacity:.55}canvas{background:#1e3948;width:100%;border-radius:10px;margin:18px 0}label{display:inline-block;margin-right:24px}progress{accent-color:#ade8a3;vertical-align:middle;width:100px}
+</style>
+<main><small>Flappy Rivals / Architect</small><h1>声音控制台</h1>
+<p>声音越响，缺口越窄。从全开开始，以普通速度持续收窄约 1.25 秒后完全闭合，安静后恢复原宽。↑ 收窄，↓ 张开。缺口在原宽的 50% 或以下时，每秒消耗 60 点能量，耗尽后缺口自动张开。短促响声或 X 发动脉冲，开合速度翻倍，持续 0.8 秒。小鸟到达前 1 秒进入保护区，直到飞出管道，缺口只可张开。</p>
+<p><label>麦克风灵敏度 <input id="gain" type="range" min="0.25" max="3" step="0.05" value="1"> <output id="gainValue">1.00×</output></label></p>
+<button id="mic" disabled>开启麦克风</button> <span id="status" role="status">正在加载 Python…</span>
+<canvas id="arena" width="640" height="300" aria-label="管道缺口大小预览"></canvas>
+<label>音量 <progress id="volume" max="1" value="0"></progress></label>
+<label>能量 <progress id="energy" max="100" value="100"></progress> <output id="amount">100</output></label>
+<span id="power">脉冲就绪</span></main>
+<script type="module">
+const el = id => document.getElementById(id);
+try {
+  const root = 'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/';
+  const {loadPyodide} = await import(root + 'pyodide.mjs');
+  const py = await loadPyodide({indexURL: root});
+  py.FS.mkdirTree('/home/pyodide/voice');
+  for (const name of ['__init__','controller','powers','versus']) {
+    const r = await fetch('../../voice/' + name + '.py');
+    if (!r.ok) throw Error('读取 ' + name + '.py 失败');
+    py.FS.writeFile('/home/pyodide/voice/' + name + '.py', await r.text());
+  }
+  py.runPython(`from voice.controller import Microphone
+from voice.versus import Architect, guarded_gap
+mic = Microphone()
+architect = Architect()
+bird_x = 0.0
+gap = 94.0
+def tick(dt, axis, pressed, gain):
+    global bird_x, gap
+    bird_x = (bird_x + 70 * min(dt, 0.1)) % 640
+    volume = mic.read(gain)
+    scale = architect.update(dt, volume, axis, pressed, powers_enabled=True)
+    gap, protected = guarded_gap(94, scale, gap, 290 - (bird_x + 18), 350 - bird_x, 70, 16)
+    top, bottom = 150 - gap / 2, 150 + gap / 2
+    return [volume, top, bottom, architect.pulse.energy, architect.pulse.remaining, architect.recovering, bird_x, protected]`);
+  const tick = py.globals.get('tick'), keys = new Set();
+  let pressed = false, on = false, last = performance.now();
+  const button = el('mic');
+  el('gain').oninput = () => { el('gainValue').value = Number(el('gain').value).toFixed(2) + '×'; };
+  button.disabled = false;
+  el('status').textContent = '键盘已就绪';
+  button.onclick = async () => {
+    button.disabled = true;
+    try {
+      await py.runPythonAsync(on ? 'await mic.stop()' : 'await mic.start()');
+      on = !on;
+      button.textContent = on ? '关闭麦克风' : '开启麦克风';
+      el('status').textContent = on ? '麦克风已开启' : '键盘已就绪';
+    } catch (e) {
+      el('status').textContent = '麦克风不可用，可检查权限或使用键盘';
+      console.error(e);
+    } finally { button.disabled = false; }
+  };
+  addEventListener('keydown', e => {
+    if (e.target === el('gain') && e.code.startsWith('Arrow')) return;
+    if (!['ArrowUp','ArrowDown','KeyX'].includes(e.code)) return;
+    e.preventDefault();
+    if (e.code === 'KeyX' && !e.repeat) pressed = true;
+    keys.add(e.code);
+  });
+  addEventListener('keyup', e => keys.delete(e.code));
+  addEventListener('blur', () => { keys.clear(); pressed = false; });
+  const ctx = el('arena').getContext('2d');
+  function frame(now) {
+    const axis = Number(keys.has('ArrowDown')) - Number(keys.has('ArrowUp'));
+    const result = tick((now-last)/1000, axis, pressed, Number(el('gain').value));
+    const [v,top,bottom,energy,remaining,recovering,birdX,protectedGap] = result.toJs();
+    result.destroy();
+    last = now; pressed = false;
+    ctx.clearRect(0,0,640,300);
+    ctx.fillStyle = '#456270'; ctx.fillRect(0,150,640,1);
+    ctx.fillStyle = remaining ? '#ffbd76' : '#82cea8';
+    ctx.fillRect(290,0,60,top); ctx.fillRect(290,bottom,60,300-bottom);
+    ctx.fillStyle = '#f8dc79';
+    ctx.beginPath(); ctx.ellipse(birdX+9,150,9,8,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#10212c'; ctx.fillRect(birdX+12,147,2,2);
+    if (protectedGap) {
+      ctx.fillStyle = '#fff'; ctx.font = '16px system-ui';
+      ctx.fillText('穿越保护 · 缺口只可张开',16,26);
+    }
+    el('volume').value=v; el('energy').value=energy;
+    el('amount').value=Math.floor(energy);
+    el('power').textContent=recovering ? '强制张开 · 放低音量或松开 ↑，能量恢复至 20 后可再次收窄' : remaining ? '脉冲 ×2 · ' + remaining.toFixed(1) + ' 秒' : energy >= 40 ? '脉冲就绪' : '能量恢复中';
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+} catch (e) {
+  el('status').textContent='加载失败，请检查本地服务和 CDN 网络连接';
+  console.error(e);
+}
+</script></html>

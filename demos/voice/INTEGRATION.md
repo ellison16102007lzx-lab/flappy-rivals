@@ -1,0 +1,45 @@
+# 成员 B 接口交接
+
+从项目根目录启动 `python -m http.server 8000 --bind 127.0.0.1`，访问 http://localhost:8000/demos/voice/ 。页面会联网加载 Pyodide 0.27.7。核心模块使用 Python 标准库。四个 voice 文件需要映射到正式页面的 Pyodide 虚拟文件系统，参考同目录 index.html 的加载代码。PyScript 项目可以通过其 files 配置映射相同目录结构。
+
+## A 在游戏循环中的调用
+
+下面的变量由引擎提供。每局创建一个 Architect。麦克风对象跨关复用，用户点击开启时 await mic.start()，失败时保留键盘操作，离开游戏时 await mic.stop()。方向键应阻止页面滚动，X 只在首次 keydown 时记一次，在下一帧消费。
+
+```python
+from voice.controller import Microphone
+from voice.versus import Architect, guarded_gap, winner
+
+mic = Microphone()
+architect = Architect()
+
+# 每个运行中的游戏帧调用一次；dt 单位为秒，画布 Y 向下。
+axis = int(down_held) - int(up_held)
+volume = mic.read(sensitivity)  # 麦克风滑块 0.25–3.0，默认 1.0
+scale = architect.update(dt, volume, axis, x_pressed, powers_enabled)
+# base_gap 为生成时的原始缺口高度。以普通速度持续收窄约 1.25 秒可从全开变为闭合。
+# 绘制与碰撞共用上下边缘，每帧以原始高度计算。
+# 每根管道移动后、碰撞检测前执行。原版 speed 是像素/帧，按 60 帧/秒换算。
+pipe.gap_size, protected = guarded_gap(
+    original_gap_size, scale, pipe.gap_size,
+    pipe.x - (bird.x + bird.width), pipe.x + pipe.width - bird.x,
+    pipe.speed * 60, bird.height,
+)
+# 绘制和碰撞直接读取 pipe.gap_size。初始化为 original_gap_size。
+# A 完成本帧碰撞与计分后调用。None 表示继续，Pilot Win 表示本关通关。
+result = winner(collided, passed_this_level, target_for_this_level)
+```
+
+第 1 关关闭技能，第 2、5 关开启，第 3、4 关由关卡配置控制。双路线关对每个缺口分别使用自己的固定中心和原始高度。声音越响缺口越窄，持续满格可完全闭合。↑ 收窄，↓ 恢复，脉冲额外收窄并使开合速度翻倍。Space 归 Pilot。重试和下一关各创建新的 Architect，暂停期间不调用 update。
+
+## C 的 HUD
+
+从同一个 Architect 对象读取 pulse.energy（0–100）和 pulse.remaining（秒）。使用 A 已读出的 volume（0–1）和 result。技能消耗 40 点，持续 0.8 秒，每秒恢复 8 点。声音大于等于 0.78 时触发，回落到 0.45 以下或等于该值后可再次触发。初始阈值可在现场测试后调整。
+
+在生成管道时保存 original_gap_size（关卡配置的 gap_size）。缺口宽度为原宽的 50% 或以下时每秒消耗 60 点，耗尽后自动张开。退出恢复状态需要缺口已经全开、能量至少为 20、收窄输入已降至 0.45 以下或等于该值。键盘收窄与声音遵守相同规则。
+
+HUD 优先显示 architect.recovering 的恢复提示；否则若 pulse.remaining > 0，显示「脉冲 ×2」和剩余秒数。音量条使用 mic.read(sensitivity) 的同一份返回值。
+
+## 临近管道保护
+
+每根管道独立判断。距进入管道约 1 秒起，到鸟尾离开管道为止，实际缺口只能增大。若进保护区前管道已闭合，立即留出鸟身高度加 12 像素的通道（上限为原始开口）。声音、方向键和脉冲均经过同一个保护函数。保护期间仍需对准缺口。HUD 可用返回的 protected 显示「穿越保护」。
