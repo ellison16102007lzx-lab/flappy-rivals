@@ -1,0 +1,4 @@
+# PyScript configuration for Flappy Rivals
+# No external packages required - game runs entirely in browser with PyScript/Pyodide
+
+packages = []
