@@ -38,8 +38,8 @@ class VoiceRules(unittest.TestCase):
         self.assertEqual(winner(True, 3, 3), "Architect Win")
 
     def test_voice_changes_size_and_preserves_center(self):
-        player = Architect()
         for volume, expected in [(0, 100), (0.5, 50), (1, 0), (0, 100)]:
+            player = Architect()
             for _ in range(26):
                 scale = player.update(0.05, volume)
             top, bottom = gap_bounds(150, 100, scale)
@@ -64,6 +64,14 @@ class VoiceRules(unittest.TestCase):
             player.update(0.05, 0, axis=-1, powers_enabled=True)
         self.assertEqual(player.scale, 0)
         self.assertAlmostEqual(player.update(0.05, 0, powers_enabled=True), 0.04)
+
+    def test_half_width_energy_threshold(self):
+        for width, energy in [(0.51, 100), (0.50, 97), (0.49, 97)]:
+            with self.subTest(width=width):
+                player = Architect()
+                player.scale = width
+                player.update(0.05, 1 - width)
+                self.assertAlmostEqual(player.pulse.energy, energy)
 
     def test_holding_drains_sixty_energy_per_second(self):
         player = Architect()

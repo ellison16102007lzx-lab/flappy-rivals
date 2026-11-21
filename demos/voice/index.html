@@ -5,7 +5,7 @@
 *{box-sizing:border-box}body{background:#10212c;color:#f0f5ed;font:16px/1.6 "DM Sans",system-ui,sans-serif;margin:5vh auto;padding:0 20px;max-width:730px}h1{font-size:clamp(28px,6vw,48px);margin:0}small{color:#9fe1b6}button{background:#b5ed9d;border:0;border-radius:6px;padding:10px 16px;font:inherit;cursor:pointer}button:disabled{opacity:.55}canvas{background:#1e3948;width:100%;border-radius:10px;margin:18px 0}label{display:inline-block;margin-right:24px}progress{accent-color:#ade8a3;vertical-align:middle;width:100px}
 </style>
 <main><small>Flappy Rivals / Architect</small><h1>声音控制台</h1>
-<p>声音越响，缺口越窄。从全开开始，以普通速度持续收窄约 1.25 秒后完全闭合，安静后恢复原宽。↑ 收窄，↓ 张开。持续压到四分之一以下会消耗能量，耗尽后缺口自动张开。短促响声或 X 发动脉冲，开合速度翻倍，持续 0.8 秒。</p>
+<p>声音越响，缺口越窄。从全开开始，以普通速度持续收窄约 1.25 秒后完全闭合，安静后恢复原宽。↑ 收窄，↓ 张开。缺口在原宽的 50% 或以下时，每秒消耗 60 点能量，耗尽后缺口自动张开。短促响声或 X 发动脉冲，开合速度翻倍，持续 0.8 秒。</p>
 <p><label>麦克风灵敏度 <input id="gain" type="range" min="0.25" max="3" step="0.05" value="1"> <output id="gainValue">1.00×</output></label></p>
 <button id="mic" disabled>开启麦克风</button> <span id="status" role="status">正在加载 Python…</span>
 <canvas id="arena" width="640" height="300" aria-label="管道缺口大小预览"></canvas>

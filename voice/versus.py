@@ -14,8 +14,7 @@ class Architect:
         squeeze = max(0.0, min(1.0, -axis)) if axis else volume
         if self.recovering and self.scale >= 1.0 and self.pulse.energy >= 20 and squeeze <= 0.45:
             self.recovering = False
-        # Near-closed gaps also cost energy: a tiny opening can still block the bird.
-        holding = self.scale <= 0.25 and squeeze >= 0.75 and not self.recovering
+        holding = self.scale <= 0.5 and not self.recovering
         active = self.pulse.update(dt, volume, power_pressed, powers_enabled and not self.recovering, holding)
         if holding and self.pulse.energy <= 0:
             self.recovering = True
