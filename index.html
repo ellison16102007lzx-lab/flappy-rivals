@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Rivals</title>
+
+    <!-- PyScript CSS -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+
+    <!-- PyScript JS -->
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: #ffffff;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            font-size: 28px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #gameCanvas {
+            border: 3px solid #4a4a6a;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            background-color: #87CEEB;
+        }
+
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #ffd700;
+            text-align: center;
+            z-index: 1000;
+        }
+
+        #loading .spinner {
+            border: 4px solid rgba(255, 215, 0, 0.3);
+            border-top: 4px solid #ffd700;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #error {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.2);
+            border: 2px solid #ff4444;
+            border-radius: 8px;
+            padding: 20px;
+            font-size: 18px;
+            color: #ff6666;
+            text-align: center;
+            z-index: 1001;
+            max-width: 400px;
+        }
+
+        .controls {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #aaa;
+            text-align: center;
+        }
+
+        .controls kbd {
+            background: #333;
+            padding: 2px 8px;
+            border-radius: 3px;
+            border: 1px solid #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flappy Rivals</h1>
+
+    <!-- Loading indicator -->
+    <div id="loading">
+        <div class="spinner"></div>
+        <div>Loading PyScript...</div>
+    </div>
+
+    <!-- Error display -->
+    <div id="error">
+        <strong>Error loading game</strong>
+        <p id="error-message"></p>
+    </div>
+
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+    <!-- Controls hint -->
+    <div class="controls">
+        <kbd>Space</kbd> Flap &nbsp;|&nbsp;
+        <kbd>1</kbd>-<kbd>5</kbd> Select Level &nbsp;|&nbsp;
+        <kbd>Space</kbd> Restart
+    </div>
+
+    <!-- PyScript configuration -->
+    <py-config>
+        packages = []
+    </py-config>
+
+    <!-- PyScript main script -->
+    <script type="py" src="main.py"></script>
+
+    <!-- Hide loading when PyScript is ready -->
+    <script>
+        // Hide loading indicator after a short delay
+        setTimeout(function() {
+            var loading = document.getElementById('loading');
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        }, 3000);
+
+        // Show error if PyScript fails to load
+        window.addEventListener('error', function(e) {
+            var errorDiv = document.getElementById('error');
+            var errorMsg = document.getElementById('error-message');
+            if (errorDiv && errorMsg) {
+                errorMsg.textContent = e.message || 'An unexpected error occurred.';
+                errorDiv.style.display = 'block';
+            }
+            var loading = document.getElementById('loading');
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

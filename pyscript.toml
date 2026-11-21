@@ -1,0 +1,11 @@
+# PyScript configuration for Flappy Rivals
+# This file configures the PyScript/Pyodide runtime environment.
+
+title = "Flappy Rivals"
+
+[packages]
+# No external packages required - using only standard library and browser APIs
+
+[interpreter]
+# Use Pyodide (default for PyScript)
+path = "https://pyscript.net/releases/2024.1.1/pyodide/pyodide.js"
