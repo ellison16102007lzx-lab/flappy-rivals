@@ -1,15 +1,22 @@
 /* Flappy Rivals UI and Canvas theme tokens */
 :root {
-  color-scheme: dark;
-  --fr-bg: #0B1020;
-  --fr-pilot: #5DE8FF;
-  --fr-architect: #FFC66D;
-  --fr-prediction: #C9AEFF;
-  --fr-bluff: #FF88B8;
-  --fr-panel: #141C32;
-  --fr-border: #52617D;
-  --fr-text: #F2F5FF;
-  --fr-muted: #ADB9D2;
+  color-scheme: light;
+  --fr-bg: #FFE5A0;
+  --fr-pilot: #356B35;
+  --fr-architect: #356B35;
+  --fr-prediction: #356B35;
+  --fr-bluff: #67452F;
+  --fr-panel: #FFF1C9;
+  --fr-border: #59432F;
+  --fr-text: #59432F;
+  --fr-muted: #356B35;
+  --fr-green: #70B747;
+  --fr-beige: #FFE5A0;
+  --fr-shadow: var(--fr-green);
+  --fr-highlight: #FFF1C9;
+  --fr-sky: #83D4D8;
+  --fr-pipe: #91CF50;
+  --fr-terracotta: #F4A340;
   --fr-font: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --fr-gap: clamp(0.75rem, 2vw, 1.25rem);
 }
@@ -22,7 +29,6 @@
   padding: clamp(0.75rem, 4vw, 2.5rem);
   color: var(--fr-text);
   background-color: var(--fr-bg);
-  background-image: radial-gradient(ellipse at top, #202A48 0%, transparent 55%);
   font: 1rem/1.5 var(--fr-font);
   overflow-wrap: anywhere;
 }
@@ -41,20 +47,19 @@
 
 .fr-panel, .fr-level, .fr-stat, .fr-role {
   padding: var(--fr-gap);
-  border: 1px solid var(--fr-border);
+  border: 3px solid var(--fr-border);
   background: var(--fr-panel);
+  box-shadow: 3px 3px 0 var(--fr-shadow);
 }
-
-.fr-panel { box-shadow: 4px 4px 0 #060911; }
 
 .fr-title {
   margin: 0;
   font-size: clamp(2rem, 7vw, 4.5rem);
   font-weight: 900;
   line-height: 1.05;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.055em;
   text-transform: uppercase;
-  text-shadow: 2px 2px 0 #475676;
+  text-shadow: 2px 2px 0 #FFF1C9, 4px 4px 0 var(--fr-shadow);
 }
 
 .fr-kicker, .fr-label {
@@ -76,7 +81,8 @@
   min-block-size: 44px;
   max-inline-size: 100%;
   padding: 0.625rem 1rem;
-  border: 2px solid currentColor;
+  border: 3px solid var(--fr-border);
+  box-shadow: inset 0 3px 0 var(--fr-highlight), 3px 3px 0 var(--fr-shadow);
   border-radius: 0;
   background: var(--fr-panel);
   color: var(--fr-text);
@@ -86,14 +92,14 @@
 }
 
 .fr-button--primary {
-  background: var(--fr-pilot);
-  border-color: var(--fr-pilot);
-  color: var(--fr-bg);
+  background: var(--fr-pipe);
+  box-shadow: inset 0 3px 0 var(--fr-pipe), 3px 3px 0 var(--fr-shadow);
 }
 
-.fr-button:hover:not(:disabled) { text-decoration: underline; }
+.fr-button:hover:not(:disabled) { background: var(--fr-highlight); text-decoration: underline; }
+.fr-button:active:not(:disabled) { box-shadow: inset 0 -3px 0 var(--fr-shadow); }
 .fr-button:disabled { opacity: 0.6; cursor: default; }
-.fr-shell :focus-visible { outline: 3px solid var(--fr-prediction); outline-offset: 4px; }
+.fr-shell :focus-visible { outline: 3px solid var(--fr-text); outline-offset: 4px; }
 
 .fr-progression {
   display: grid;
@@ -105,9 +111,9 @@
 }
 
 .fr-level { padding: 0.5rem; text-align: center; }
-.fr-level--complete { border-color: var(--fr-pilot); }
-.fr-level[aria-current="step"] { border: 2px solid var(--fr-architect); }
-.fr-level--locked { color: var(--fr-muted); }
+.fr-level--complete { background: var(--fr-highlight); }
+.fr-level[aria-current="step"] { background: var(--fr-beige); box-shadow: inset 0 -4px 0 var(--fr-pipe); }
+.fr-level--locked { background: #FFE5A0; color: var(--fr-muted); }
 
 .fr-play-layout {
   display: grid;
@@ -129,11 +135,12 @@
 
 .fr-stage {
   min-inline-size: 0;
-  border: 2px solid var(--fr-border);
-  background: var(--fr-bg);
+  border: 4px solid var(--fr-border);
+  background: var(--fr-panel);
+  box-shadow: 4px 4px 0 var(--fr-shadow);
 }
 
-.fr-canvas { display: block; inline-size: 100%; block-size: auto; }
+.fr-canvas { display: block; inline-size: 100%; block-size: auto; image-rendering: pixelated; }
 
 .fr-pilot { --fr-accent: var(--fr-pilot); }
 .fr-architect { --fr-accent: var(--fr-architect); }
@@ -141,7 +148,8 @@
 .fr-bluff { --fr-accent: var(--fr-bluff); }
 
 .fr-accent { color: var(--fr-accent, var(--fr-text)); }
-.fr-role, .fr-feedback { border-inline-start: 4px solid var(--fr-accent, var(--fr-border)); }
+.fr-role, .fr-feedback { border-inline-start: 6px solid var(--fr-accent, var(--fr-border)); }
+.fr-feedback.fr-bluff { border-inline-start-color: var(--fr-terracotta); }
 .fr-feedback p { margin-block: 0.375rem 0; }
 
 .fr-meter {
@@ -150,7 +158,7 @@
   block-size: 1rem;
   overflow: hidden;
   appearance: none;
-  border: 1px solid var(--fr-border);
+  border: 2px solid var(--fr-border);
   border-radius: 0;
   background: var(--fr-bg);
   color: var(--fr-accent, var(--fr-pilot));
@@ -163,6 +171,7 @@
 
 .fr-result--game-over { --fr-accent: var(--fr-bluff); }
 .fr-result--winner { --fr-accent: var(--fr-architect); }
+.fr-result .fr-panel { border-color: var(--fr-accent, var(--fr-border)); }
 
 @media (max-width: 48rem) {
   .fr-play-layout { grid-template-columns: minmax(0, 1fr); }
