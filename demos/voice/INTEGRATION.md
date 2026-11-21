@@ -15,11 +15,12 @@ architect = Architect()
 
 # 每个运行中的游戏帧调用一次；dt 单位为秒，画布 Y 向下。
 axis = int(down_held) - int(up_held)
-volume = mic.read()
+volume = mic.read(sensitivity)  # 麦克风滑块 0.25–3.0，默认 1.0
 scale = architect.update(dt, volume, axis, x_pressed, powers_enabled)
 # base_gap 为生成时的原始缺口高度。以普通速度持续收窄约 1.25 秒可从全开变为闭合。
 # 绘制与碰撞共用上下边缘，每帧以原始高度计算。
-pipe.gap_top, pipe.gap_bottom = gap_bounds(pipe.base_y, pipe.base_gap, scale)
+top, bottom = gap_bounds(pipe.gap_y, original_gap_size, scale)
+pipe.gap_size = bottom - top  # 团队 Pipe 的绘制与碰撞都读取 gap_size
 # A 完成本帧碰撞与计分后调用。None 表示继续，Pilot Win 表示本关通关。
 result = winner(collided, passed_this_level, target_for_this_level)
 ```
@@ -29,3 +30,7 @@ result = winner(collided, passed_this_level, target_for_this_level)
 ## C 的 HUD
 
 从同一个 Architect 对象读取 pulse.energy（0–100）和 pulse.remaining（秒）。使用 A 已读出的 volume（0–1）和 result。技能消耗 40 点，持续 0.8 秒，每秒恢复 8 点。声音大于等于 0.78 时触发，回落到 0.45 以下或等于该值后可再次触发。初始阈值可在现场测试后调整。
+
+在生成管道时保存 original_gap_size（关卡配置的 gap_size）。持续压到原始缺口的 25% 以下（含边界）时每秒消耗 40 点，耗尽后自动张开。退出恢复状态需要缺口已经全开、能量至少为 20、收窄输入已降至 0.45 以下或等于该值。键盘收窄与声音遵守相同规则。
+
+HUD 优先显示 architect.recovering 的恢复提示；否则若 pulse.remaining > 0，显示「脉冲 ×2」和剩余秒数。音量条使用 mic.read(sensitivity) 的同一份返回值。

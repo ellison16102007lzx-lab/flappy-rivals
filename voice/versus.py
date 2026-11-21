@@ -5,14 +5,23 @@ class Architect:
     def __init__(self):
         self.pulse = Pulse()
         self.scale = 1.0
+        self.recovering = False
 
     def update(self, dt, volume, axis=0, power_pressed=False, powers_enabled=False):
         """每个游戏帧调用一次。返回相对于原始缺口高度的倍率。"""
         dt = min(0.1, max(0.0, dt))
         volume = max(0.0, min(1.0, volume))
-        active = self.pulse.update(dt, volume, power_pressed, powers_enabled)
         squeeze = max(0.0, min(1.0, -axis)) if axis else volume
-        target = 1.0 - squeeze
+        if self.recovering and self.scale >= 1.0 and self.pulse.energy >= 20 and squeeze <= 0.45:
+            self.recovering = False
+        # Near-closed gaps also cost energy: a tiny opening can still block the bird.
+        holding = self.scale <= 0.25 and squeeze >= 0.75 and not self.recovering
+        active = self.pulse.update(dt, volume, power_pressed, powers_enabled and not self.recovering, holding)
+        if holding and self.pulse.energy <= 0:
+            self.recovering = True
+            self.pulse.remaining = 0.0
+            active = False
+        target = 1.0 if self.recovering else 1.0 - squeeze
         speed = 0.8  # Fraction of the full gap travelled per second.
         if active:
             speed *= 2

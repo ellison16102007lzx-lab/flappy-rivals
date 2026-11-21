@@ -13,10 +13,10 @@ class VoiceRules(unittest.TestCase):
     def test_hold_and_release(self):
         player = Architect()
         for _ in range(30):
-            player.update(0.05, 1, powers_enabled=True)
+            player.update(0.05, 0.78, axis=1, powers_enabled=True)
         self.assertAlmostEqual(player.pulse.energy, 60 + 29 * 0.4)
         player.update(0.05, 0, powers_enabled=True)
-        player.update(0.05, 1, powers_enabled=True)
+        player.update(0.05, 0.78, axis=1, powers_enabled=True)
         self.assertLess(player.pulse.energy, 40)
 
     def test_level_and_energy(self):
@@ -64,3 +64,23 @@ class VoiceRules(unittest.TestCase):
             player.update(0.05, 0, axis=-1, powers_enabled=True)
         self.assertEqual(player.scale, 0)
         self.assertAlmostEqual(player.update(0.05, 0, powers_enabled=True), 0.04)
+
+    def test_sustained_voice_and_keyboard_force_reopening(self):
+        for volume, axis, powers in [(1, 0, True), (0, -1, False), (0.9, 0, False)]:
+            player = Architect()
+            smallest = 1
+            for _ in range(600):
+                smallest = min(smallest, player.update(1/60, volume, axis, powers_enabled=powers))
+            self.assertLessEqual(smallest, 0.101)
+            self.assertTrue(player.recovering)
+            self.assertEqual(player.scale, 1)
+            player.update(0.05, 0)
+            self.assertFalse(player.recovering)
+            self.assertLess(player.update(0.05, 1), 1)
+
+    def test_sensitivity_scales_signal_before_clipping(self):
+        samples = [0.08, -0.08]
+        normal = volume_from_samples(samples)
+        self.assertAlmostEqual(volume_from_samples(samples, 0.5), normal / 2)
+        self.assertEqual(volume_from_samples(samples, 3), 1)
+        self.assertEqual(volume_from_samples([0], 3), 0)

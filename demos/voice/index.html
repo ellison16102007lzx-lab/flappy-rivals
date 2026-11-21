@@ -5,7 +5,8 @@
 *{box-sizing:border-box}body{background:#10212c;color:#f0f5ed;font:16px/1.6 "DM Sans",system-ui,sans-serif;margin:5vh auto;padding:0 20px;max-width:730px}h1{font-size:clamp(28px,6vw,48px);margin:0}small{color:#9fe1b6}button{background:#b5ed9d;border:0;border-radius:6px;padding:10px 16px;font:inherit;cursor:pointer}button:disabled{opacity:.55}canvas{background:#1e3948;width:100%;border-radius:10px;margin:18px 0}label{display:inline-block;margin-right:24px}progress{accent-color:#ade8a3;vertical-align:middle;width:100px}
 </style>
 <main><small>Flappy Rivals / Architect</small><h1>声音控制台</h1>
-<p>声音越响，缺口越窄。从全开开始，以普通速度持续收窄约 1.25 秒后完全闭合，安静后恢复原宽。↑ 收窄，↓ 张开。短促响声或 X 发动脉冲，开合速度翻倍，持续 0.8 秒。</p>
+<p>声音越响，缺口越窄。从全开开始，以普通速度持续收窄约 1.25 秒后完全闭合，安静后恢复原宽。↑ 收窄，↓ 张开。持续压到四分之一以下会消耗能量，耗尽后缺口自动张开。短促响声或 X 发动脉冲，开合速度翻倍，持续 0.8 秒。</p>
+<p><label>麦克风灵敏度 <input id="gain" type="range" min="0.25" max="3" step="0.05" value="1"> <output id="gainValue">1.00×</output></label></p>
 <button id="mic" disabled>开启麦克风</button> <span id="status" role="status">正在加载 Python…</span>
 <canvas id="arena" width="640" height="300" aria-label="管道缺口大小预览"></canvas>
 <label>音量 <progress id="volume" max="1" value="0"></progress></label>
@@ -27,14 +28,15 @@ try {
 from voice.versus import Architect, gap_bounds
 mic = Microphone()
 architect = Architect()
-def tick(dt, axis, pressed):
-    volume = mic.read()
+def tick(dt, axis, pressed, gain):
+    volume = mic.read(gain)
     scale = architect.update(dt, volume, axis, pressed, powers_enabled=True)
     top, bottom = gap_bounds(150, 94, scale)
-    return [volume, top, bottom, architect.pulse.energy, architect.pulse.remaining]`);
+    return [volume, top, bottom, architect.pulse.energy, architect.pulse.remaining, architect.recovering]`);
   const tick = py.globals.get('tick'), keys = new Set();
   let pressed = false, on = false, last = performance.now();
   const button = el('mic');
+  el('gain').oninput = () => { el('gainValue').value = Number(el('gain').value).toFixed(2) + '×'; };
   button.disabled = false;
   el('status').textContent = '键盘已就绪';
   button.onclick = async () => {
@@ -50,6 +52,7 @@ def tick(dt, axis, pressed):
     } finally { button.disabled = false; }
   };
   addEventListener('keydown', e => {
+    if (e.target === el('gain') && e.code.startsWith('Arrow')) return;
     if (!['ArrowUp','ArrowDown','KeyX'].includes(e.code)) return;
     e.preventDefault();
     if (e.code === 'KeyX' && !e.repeat) pressed = true;
@@ -60,8 +63,8 @@ def tick(dt, axis, pressed):
   const ctx = el('arena').getContext('2d');
   function frame(now) {
     const axis = Number(keys.has('ArrowDown')) - Number(keys.has('ArrowUp'));
-    const result = tick((now-last)/1000, axis, pressed);
-    const [v,top,bottom,energy,remaining] = result.toJs();
+    const result = tick((now-last)/1000, axis, pressed, Number(el('gain').value));
+    const [v,top,bottom,energy,remaining,recovering] = result.toJs();
     result.destroy();
     last = now; pressed = false;
     ctx.clearRect(0,0,640,300);
@@ -70,7 +73,7 @@ def tick(dt, axis, pressed):
     ctx.fillRect(290,0,60,top); ctx.fillRect(290,bottom,60,300-bottom);
     el('volume').value=v; el('energy').value=energy;
     el('amount').value=Math.floor(energy);
-    el('power').textContent=remaining ? '脉冲生效' : energy >= 40 ? '脉冲就绪' : '能量恢复中';
+    el('power').textContent=recovering ? '强制张开 · 放低音量或松开 ↑，能量恢复至 20 后可再次收窄' : remaining ? '脉冲 ×2 · ' + remaining.toFixed(1) + ' 秒' : energy >= 40 ? '脉冲就绪' : '能量恢复中';
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

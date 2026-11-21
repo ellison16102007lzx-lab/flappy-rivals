@@ -2,9 +2,9 @@
 from math import sqrt
 
 
-def volume_from_samples(samples):
+def volume_from_samples(samples, sensitivity=1.0):
     rms = sqrt(sum(x * x for x in samples) / max(1, len(samples)))
-    return min(1.0, max(0.0, (rms - 0.008) / 0.12))
+    return min(1.0, max(0.0, (rms - 0.008) * max(0.25, min(3.0, sensitivity)) / 0.12))
 
 
 class Microphone:
@@ -32,11 +32,11 @@ class Microphone:
             await self.stop()
             raise
 
-    def read(self):
+    def read(self, sensitivity=1.0):
         if self.analyser is None:
             return 0.0
         self.analyser.getFloatTimeDomainData(self.buffer)
-        return volume_from_samples(self.buffer.to_py())
+        return volume_from_samples(self.buffer.to_py(), sensitivity)
 
     async def stop(self):
         if self.stream is not None:
