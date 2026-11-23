@@ -104,9 +104,9 @@ class VoiceRules(unittest.TestCase):
         player = Architect()
         scale = player.update(0.1, 1, power_pressed=True, powers_enabled=True)
         self.assertLess(scale, 1)
-        for entry, exit_distance in [(100, 190), (0, 90), (-90, 0)]:
+        for entry, exit_distance in [(0, 90), (-45, 45), (-90, 0)]:
             self.assertEqual(guarded_gap(100, scale, 100, entry, exit_distance, 100, 24), (100, True))
-        for entry, exit_distance in [(101, 191), (-91, -1)]:
+        for entry, exit_distance in [(100, 190), (0.01, 90.01), (-90.01, -0.01)]:
             self.assertEqual(guarded_gap(100, scale, 100, entry, exit_distance, 100, 24), (100 * scale, False))
 
     def test_protected_gap_allows_passage_and_can_widen(self):

@@ -1,4 +1,4 @@
-"""麦克风接口仅在浏览器内启动。Python 单元测试可直接导入本模块。"""
+"""Microphone access starts in the browser. Unit tests can import this module directly."""
 from math import sqrt
 
 
@@ -13,7 +13,7 @@ class Microphone:
         self.buffer = None
 
     async def start(self):
-        """绑定到用户点击事件；调用方在等待期间禁用按钮。"""
+        """Call from a user click and disable the button while the request is pending."""
         from js import AudioContext, Float32Array, JSON, navigator
         if self.stream is not None:
             return

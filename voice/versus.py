@@ -8,7 +8,7 @@ class Architect:
         self.recovering = False
 
     def update(self, dt, volume, axis=0, power_pressed=False, powers_enabled=False):
-        """每个游戏帧调用一次。返回相对于原始缺口高度的倍率。"""
+        """Call once per game frame. Return the gap height as a fraction of its original height."""
         dt = min(0.1, max(0.0, dt))
         volume = max(0.0, min(1.0, volume))
         squeeze = max(0.0, min(1.0, -axis)) if axis else volume
@@ -32,9 +32,9 @@ class Architect:
 
 def guarded_gap(base_gap, scale, previous_gap, distance_to_entry, distance_to_exit,
                 speed_px_per_second, bird_height):
-    """Distances are pipe left minus bird right, and pipe right minus bird left."""
+    """Guard from first contact through last contact. Speed is retained for existing callers."""
     requested = base_gap * scale
-    protected = distance_to_exit >= 0 and distance_to_entry <= max(0, speed_px_per_second)
+    protected = distance_to_exit >= 0 and distance_to_entry <= 0
     if protected:
         clearance = min(base_gap, bird_height + 12)
         return max(requested, previous_gap, clearance), True
@@ -42,7 +42,7 @@ def guarded_gap(base_gap, scale, previous_gap, distance_to_entry, distance_to_ex
 
 
 def gap_bounds(center_y, base_gap, scale, min_gap=0):
-    """按固定中心缩放。关卡应保证 base_gap >= min_gap。"""
+    """Scale around a fixed center. Level settings must satisfy base_gap >= min_gap."""
     if scale <= 0:
         return center_y, center_y
     gap = min(base_gap, max(min_gap, base_gap * scale))

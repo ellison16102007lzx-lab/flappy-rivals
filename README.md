@@ -1,90 +1,22 @@
-# Retro Remix: Old Tech, New Tricks 🎮
+# Flappy Rivals — Team Demo
 
-A Flappy Bird-style game themed around student life obstacles, built for the **First Year Hackathon**.
+Open this folder in JetBrains Air and run `run_demo.py` with Python 3.10 or later. From the project terminal, run `python run_demo.py`. The launcher opens the game in your browser. Stop the launcher to shut down the local server. The browser downloads Pyodide 0.27.7 from jsDelivr and loads the team's Python code from the local server. No pip packages are required.
 
-## 🎯 Game Features
+## Controls
 
-- **Bird** affected by gravity — press **Space** to jump
-- **Student-life obstacles** moving from right to left:
-  - 📄 **Assignments** — stacks of papers
-  - 📝 **Exams** — test papers with red X marks
-  - 📅 **Deadlines** — calendars with warning signs
-  - ☕ **Coffee Cups** — your lifeline (or obstacle!)
-- **Collision detection** with obstacles and screen boundaries
-- **Score** increases when you successfully pass an obstacle
-- **Stress Meter** that gradually increases difficulty over time:
-  - Obstacles move faster
-  - Gaps between obstacles shrink
-  - Obstacles spawn more frequently
-- **Start screen** with instructions
-- **Game Over screen** showing final score and stress level
-- **Restart** by pressing **R**
+- Pilot: press Space or click the arena to flap. Architect: hold ↑ to narrow the gap, hold ↓ to open it, and press X for a pulse.
+- Select **Enable microphone** to control the gap with your voice. Adjust the sensitivity slider to suit the room. Switch voice control to Pilot to flap with short sounds while the Architect uses the keyboard.
+- At half width or less, the gap drains 60 energy per second. A pulse costs 40 energy and doubles the movement speed for 0.8 seconds. The gap reopens when energy runs out. Hitting a pipe ends the round immediately. During a clean crossing, the gap can only widen until the bird's tail clears the exit.
+- Press Space to start, retry, or advance. After Level 5, press Space to start a new run. For a live demo, select a level from the menu or press 1–5.
 
-## 📋 Requirements
+## Levels
 
-- Python 3.6 or higher
-- Pygame library (use `pygame-ce` for Python 3.14+)
+Level 1 introduces the duel. Level 2 unlocks voice powers. Level 3 offers two routes. In Level 4 the model predicts the bird's height at the pipe entrance. In Level 5 an error of at least 40 pixels triggers a Bluff. The model learns from observed crossings and retains its samples for the browser session.
 
-## 🚀 Installation
+## Team modules
 
-1. **Install Python** (if not already installed):
-   - Download from [python.org](https://www.python.org/downloads/)
-   - Make sure to check "Add Python to PATH" during installation
+Member A's `game/` handles physics, collisions, scoring, and levels. Member B's `voice/` handles the microphone, energy, powers, and crossing protection. Member C's `ml/` and `style.css` provide online learning, bluff detection, and the UI theme. The game starts at `index.html`. The browser adapter in `boot.js` loads Python and advances the simulation at 60 Hz. The `main.py` module connects controls, the game engine, and the HUD. The visual prototype is in `ui-preview/`, and the standalone voice demo is in `demos/voice/`.
 
-2. **Install Pygame**:
-   
-   For Python 3.13 and earlier:
-   ```bash
-   pip install pygame
-   ```
-   
-   For Python 3.14+ (use the community edition):
-   ```bash
-   pip install pygame-ce
-   ```
-   
-   > **Note:** Both `pygame` and `pygame-ce` are imported the same way (`import pygame`), so the game code works with either.
+## Tests
 
-## 🎮 How to Play
-
-1. **Run the game**:
-   ```bash
-   python FirstYearHackathon.py
-   ```
-
-2. **Controls**:
-   - **Space** — Jump (also starts the game from the start screen)
-   - **R** — Restart after Game Over
-
-3. **Objective**:
-   - Dodge the student-life obstacles by flying through the gaps
-   - Your score increases for each obstacle you pass
-   - Watch your Stress Meter — the longer you survive, the harder it gets!
-
-## 📁 Project Structure
-
-```
-FirstYearHackathon/
-├── FirstYearHackathon.py   # Main game file (single file, all classes included)
-├── README.md               # This file
-└── src/                    # Source directory (for future expansion)
-```
-
-## 🏗️ Code Structure
-
-The game is organized into well-documented classes:
-
-- **`Bird`** — Player-controlled bird with gravity and jump mechanics
-- **`Obstacle`** — Student-life themed obstacles with different visual styles
-- **`StressMeter`** — Manages progressive difficulty increase
-- **`Game`** — Main game loop, state management, and rendering
-
-## 💡 Tips
-
-- Time your jumps carefully — the gaps get smaller as stress increases!
-- Don't fly too high or too low — screen boundaries will end your run
-- The Stress Meter starts at 0% and increases over time, making the game progressively harder
-
-## 🎨 Theme
-
-This game is themed for the **"Retro Remix: Old Tech, New Tricks"** hackathon, replacing traditional pipes with relatable student-life obstacles that every student can recognize!
+Run `python -B -m unittest discover -s tests -v` from the project root. Integration tests cover pipe contact, crossing protection, level progression, and forecast scoring at the crossing.

@@ -6,6 +6,8 @@ Provides integration interfaces for voice and ML modules.
 """
 
 import math
+from ml import OnlinePositionPredictor, BluffDetector
+from voice.versus import Architect, guarded_gap, winner
 from game.bird import Bird
 from game.pipes import PipeManager
 from game.levels import LevelManager, get_level_config
@@ -82,7 +84,12 @@ class GameEngine:
         # Levels
         self.level_manager = LevelManager()
 
-        # Voice integration (placeholder)
+        self.architect = Architect()
+        self.model = OnlinePositionPredictor(position_scale=SCREEN_HEIGHT)
+        self.detector = BluffDetector()
+        self.pending = None
+        self.protected = False
+
         self.voice_level = 0.0
         self.energy = 100.0
 
@@ -112,6 +119,9 @@ class GameEngine:
 
     def start(self):
         """Start or restart the game."""
+        self.architect = Architect()
+        self.pending = self.prediction = self.bluff_feedback = None
+        self.protected = False
         self.state = "playing"
         self.score = 0
         self.game_over = False
@@ -139,27 +149,7 @@ class GameEngine:
 
     def restart(self):
         """Restart from the current level."""
-        self.state = "playing"
-        self.score = 0
-        self.game_over = False
-        self.winner = None
-        self.frame_count = 0
-        self.energy = 100.0
-
-        # Reset bird
-        self.bird.reset(150, SCREEN_HEIGHT / 2 - 30)
-
-        # Reset pipes
-        self.pipe_manager.reset()
-
-        # Reset level progress
-        self.level_manager.reset_level()
-
-        # Apply level config
-        self._apply_level_config()
-
-        # Update game state
-        self._update_game_state()
+        self.start()
 
     def set_level(self, level):
         """
@@ -188,10 +178,10 @@ class GameEngine:
                 self._apply_level_config()
                 self.start()
             else:
-                # Already at max level, restart current
-                self.restart()
+                self.level_manager.set_level(1)
+                self.start()
 
-    def update(self):
+    def update(self, volume=0.0, axis=0, power_pressed=False):
         """
         Update game state for one frame.
         Called each frame by the animation loop.
@@ -208,32 +198,55 @@ class GameEngine:
         # Update pipes
         self.pipe_manager.update()
 
-        # Check for passed pipes (scoring)
-        passed = self.pipe_manager.check_passed(self.bird.x, self.bird.width)
-        if passed > 0:
+        # Test the existing wall before crossing protection can widen a gap.
+        hit = self._check_collision()
+        self.voice_level = volume
+        scale = self.architect.update(1/60, volume, axis, power_pressed, config["voice_powerup"])
+        self.energy = self.architect.pulse.energy
+        self.protected = False
+        for pipe in self.pipe_manager.pipes:
+            entry = pipe.x - (self.bird.x + self.bird.width)
+            exit_distance = pipe.x + pipe.width - self.bird.x
+            pipe.gap_size, protected = guarded_gap(config["gap_size"], scale, pipe.gap_size,
+                                                   entry, exit_distance, pipe.speed * 60, self.bird.height)
+            self.protected |= protected
+        hit = hit or self._check_collision() or not 0 <= self.bird.y <= SCREEN_HEIGHT - GROUND_HEIGHT - self.bird.height
+        if not hit:
+            passed = self.pipe_manager.check_passed(self.bird.x, self.bird.width)
             self.score += passed
-            self.level_manager.record_obstacle_cleared()
-
-        # Check collision
-        if self._check_collision():
+            for _ in range(passed):
+                self.level_manager.record_obstacle_cleared()
+            self._track_forecast(config)
+        self.winner = winner(hit, self.score, config["obstacles_to_clear"])
+        if hit:
             self.state = "gameover"
             self.game_over = True
-            self.winner = "AI"  # AI wins on collision
-        else:
-            # Check screen boundaries
-            play_height = SCREEN_HEIGHT - GROUND_HEIGHT
-            if self.bird.y < 0 or self.bird.y + self.bird.height > play_height:
-                self.state = "gameover"
-                self.game_over = True
-                self.winner = "AI"
-
-        # Check level completion
-        if self.level_manager.is_level_complete() and self.state == "playing":
+        elif self.winner:
             self.state = "levelcomplete"
-            self.winner = "Player"
 
         # Update game state dictionary
         self._update_game_state()
+
+    def _track_forecast(self, config):
+        if not config["ml_prediction"]:
+            return
+        horizon = self.model.horizon_ticks
+        if self.pending and self.frame_count == self.pending[0]:
+            _, y, velocity, predicted = self.pending
+            actual = self.bird.y
+            result = self.detector.evaluate(predicted, actual)
+            self.bluff_feedback = f"Prediction error {result.absolute_error_px:.0f} px"
+            if config["ai_bluff"] and result.is_bluff:
+                self.bluff_feedback += " · Bluff!"
+            self.model.update(y, velocity, actual)
+            self.pending = None
+        for pipe in self.pipe_manager.pipes:
+            distance = pipe.x - self.bird.x - self.bird.width
+            if (horizon - 1) * pipe.speed < distance <= horizon * pipe.speed:
+                y, velocity = self.bird.y, self.bird.velocity
+                self.prediction = self.model.predict(y, velocity)
+                self.pending = self.frame_count + horizon, y, velocity, self.prediction
+                break
 
     def _check_collision(self):
         """
@@ -263,7 +276,7 @@ class GameEngine:
         """
         x1, y1, w1, h1 = r1
         x2, y2, w2, h2 = r2
-        return x1 < x2 + w2 and x1 + w1 > x2 and y1 < y2 + h2 and y1 + h1 > y2
+        return x1 <= x2 + w2 and x1 + w1 >= x2 and y1 <= y2 + h2 and y1 + h1 >= y2
 
     def _update_game_state(self):
         """Update the shared game state dictionary."""
@@ -441,8 +454,8 @@ class GameEngine:
         ctx.lineWidth = 4
         ctx.font = "bold 48px monospace"
         ctx.textAlign = "center"
-        ctx.strokeText("Game Over", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60)
-        ctx.fillText("Game Over", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60)
+        ctx.strokeText("Architect Win", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60)
+        ctx.fillText("Architect Win", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60)
 
         # Score
         ctx.fillStyle = rgb(WHITE)
@@ -470,8 +483,8 @@ class GameEngine:
         ctx.lineWidth = 4
         ctx.font = "bold 40px monospace"
         ctx.textAlign = "center"
-        ctx.strokeText("Level Complete!", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60)
-        ctx.fillText("Level Complete!", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60)
+        ctx.strokeText("Pilot Win", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60)
+        ctx.fillText("Pilot Win", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60)
 
         # Score
         ctx.fillStyle = rgb(WHITE)
@@ -482,8 +495,9 @@ class GameEngine:
 
         # Next level
         ctx.font = "20px monospace"
-        ctx.strokeText("Press SPACE for next level", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
-        ctx.fillText("Press SPACE for next level", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
+        hint = "SPACE: replay from Level 1" if self.level_manager.current_level == 5 else "SPACE: next level"
+        ctx.strokeText(hint, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
+        ctx.fillText(hint, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
 
     # --- Integration Interfaces ---
 
